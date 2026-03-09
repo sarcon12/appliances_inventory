@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Quality Appliances Inventory System</title>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+.container{
+width:350px;
+background:rgba(0,0,0,0.7);
+padding:25px;
+border-radius:15px;
+box-shadow:0 0 20px rgba(0,0,0,0.5);
+text-align:center;
+}
+
+h1{
+font-size:20px;
+margin-bottom:15px;
+}
+
+input,select{
+width:90%;
+padding:10px;
+margin:8px 0;
+border-radius:5px;
+border:none;
+}
+
+button{
+padding:10px 20px;
+margin:5px;
+border:none;
+border-radius:5px;
+background:#00c6ff;
+color:white;
+cursor:pointer
+}
+
+button:hover{
+background:#0072ff
+}
+
+.togglePass{
+cursor:pointer;
+font-size:12px;
+color:#00c6ff;
+margin-left:5px;
+}
+
+.hide{display:none}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:10px;
+margin-top:20px
+}
+
+.card{
+background:rgba(255,255,255,0.1);
+padding:15px;
+border-radius:8px
+}
+
+table{
+width:100%;
+margin-top:20px;
+border-collapse:collapse
+}
+
+th,td{
+padding:10px;
+border:1px solid rgba(255,255,255,0.2)
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Quality Appliances Inventory System</h1>
+
+<div id="login">
+<input id="username" placeholder="Username"><br>
+<div style="position:relative;width:90%;margin:auto;">
+<input id="password" type="password" placeholder="Password" style="width:100%;">
+<span class="togglePass" onclick="togglePassword()">Show</span>
+</div>
+<select id="role">
+<option value="admin">Admin</option>
+<option value="staff">Staff</option>
+<option value="customer">Customer</option>
+</select>
+<br>
+<button onclick="login()">Login</button>
+<button onclick="showRegister()">Register</button>
+</div>
+
+<div id="register" class="hide">
+<h3>Customer Registration</h3>
+<input id="regUser" placeholder="Username"><br>
+<div style="position:relative;width:90%;margin:auto;">
+<input id="regPass" type="password" placeholder="Password" style="width:100%;">
+<span class="togglePass" onclick="toggleRegPassword()">Show</span>
+</div>
+<br>
+<button onclick="register()">Register</button>
+<button onclick="back()">Back</button>
+</div>
+
+<div id="dashboard" class="hide">
+<h2 id="welcome"></h2>
+<div id="menu" class="grid"></div>
+<button onclick="logout()">Logout</button>
+</div>
+
+<div id="addBox" class="hide">
+<h3>Add Appliance</h3>
+<input id="pname" placeholder="Name">
+<select id="pcat">
+<option>Refrigerator</option>
+<option>Washing Machine</option>
+<option>Microwave</option>
+<option>Television</option>
+<option>Air Conditioner</option>
+</select>
+<input id="pqty" type="number" placeholder="Quantity">
+<button onclick="addProduct()">Add</button>
+</div>
+
+<div id="inventory" class="hide">
+<h3>Inventory</h3>
+<button onclick="download()">Generate Report</button>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Category</th>
+<th>Qty</th>
+<th>Update</th>
+</tr>
+</thead>
+<tbody id="table"></tbody>
+</table>
+</div>
+
+<div id="orderBox" class="hide">
+<h3>Place Order</h3>
+<select id="orderProduct"></select>
+<input id="orderQty" type="number" placeholder="Quantity">
+<button onclick="order()">Order</button>
+</div>
+
+<div id="usersBox" class="hide">
+<h3>Registered Users</h3>
+<table>
+<thead>
+<tr>
+<th>Username</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody id="usersTable"></tbody>
+</table>
+</div>
+
+</div>
+
+<script>
+let users=JSON.parse(localStorage.getItem("users"))||[
+{name:"admin",pass:"admin123",role:"admin"},
+{name:"staff",pass:"staff123",role:"staff"}
+]
+let products=JSON.parse(localStorage.getItem("products"))||[]
+let currentUser=null
+
+function save(){
+localStorage.setItem("users",JSON.stringify(users))
+localStorage.setItem("products",JSON.stringify(products))
+}
+
+function togglePassword(){
+let pw=document.getElementById("password");
+let t=this; 
+pw.type=pw.type==="password"?"text":"password";
+event.target.innerText=pw.type==="password"?"Show":"Hide";
+}
+
+function toggleRegPassword(){
+let pw=document.getElementById("regPass");
+pw.type=pw.type==="password"?"text":"password";
+event.target.innerText=pw.type==="password"?"Show":"Hide";
+}
+
+function login(){
+let u=document.getElementById("username").value
+let p=document.getElementById("password").value
+let r=document.getElementById("role").value
+let found=users.find(x=>x.name==u && x.pass==p && x.role==r)
+if(!found){alert("Invalid login");return;}
+currentUser=found
+document.getElementById("login").style.display="none"
+document.getElementById("dashboard").classList.remove("hide")
+document.getElementById("welcome").innerText="Welcome "+u+" ("+r+")"
+menu(r)
+}
+
+function menu(role){
+let menu=document.getElementById("menu")
+menu.innerHTML=""
+let items=[]
+if(role=="admin")items=["Add Appliance","Manage Inventory","Generate Report","View Users"]
+if(role=="staff")items=["View Products","Place Order"]
+if(role=="customer")items=["View Products"]
+items.forEach(i=>{
+let div=document.createElement("div")
+div.className="card"
+div.innerHTML="<h3>"+i+"</h3><button onclick='openFeature(\""+i+"\")'>Open</button>"
+menu.appendChild(div)
+})
+}
+
+function openFeature(name){
+document.getElementById("addBox").classList.add("hide")
+document.getElementById("inventory").classList.add("hide")
+document.getElementById("orderBox").classList.add("hide")
+document.getElementById("usersBox").classList.add("hide")
+if(name=="Add Appliance")document.getElementById("addBox").classList.remove("hide")
+if(name=="Manage Inventory"||name=="View Products"){document.getElementById("inventory").classList.remove("hide"); render()}
+if(name=="Place Order"){document.getElementById("orderBox").classList.remove("hide"); loadProducts()}
+if(name=="Generate Report")download()
+if(name=="View Users"){document.getElementById("usersBox").classList.remove("hide"); showUsers()}
+}
+
+function register(){
+let u=document.getElementById("regUser").value
+let p=document.getElementById("regPass").value
+if(!u||!p){alert("Fill fields"); return;}
+if(users.find(x=>x.name==u)){alert("Username exists"); return;}
+users.push({name:u,pass:p,role:"customer"})
+save()
+alert("Registered")
+back()
+}
+
+function showRegister(){
+document.getElementById("login").classList.add("hide")
+document.getElementById("register").classList.remove("hide")
+}
+
+function back(){
+document.getElementById("register").classList.add("hide")
+document.getElementById("login").classList.remove("hide")
+}
+
+function addProduct(){
+let name=document.getElementById("pname").value
+let cat=document.getElementById("pcat").value
+let qty=parseInt(document.getElementById("pqty").value)
+products.push({name,cat,qty})
+save()
+alert("Appliance Added")
+render()
+}
+
+function render(){
+let table=document.getElementById("table")
+table.innerHTML=""
+products.forEach((p,i)=>{
+let row="<tr>"+
+"<td>"+p.name+"</td>"+
+"<td>"+p.cat+"</td>"+
+"<td>"+p.qty+"</td>"+
+"<td><button onclick='update("+i+")'>Update</button></td>"+
+"</tr>"
+table.innerHTML+=row
+})
+}
+
+function update(i){
+let newQty=prompt("Enter new quantity")
+products[i].qty=parseInt(newQty)
+save()
+render()
+}
+
+function loadProducts(){
+let s=document.getElementById("orderProduct")
+s.innerHTML=""
+products.forEach((p,i)=>{s.innerHTML+="<option value='"+i+"'>"+p.name+"</option>"})
+}
+
+function order(){
+let i=document.getElementById("orderProduct").value
+let q=parseInt(document.getElementById("orderQty").value)
+if(products[i].qty>=q){products[i].qty-=q; save(); alert("Order successful"); render()}
+else alert("Not enough stock")
+}
+
+function showUsers(){
+let t=document.getElementById("usersTable")
+t.innerHTML=""
+users.forEach(u=>{t.innerHTML+="<tr><td>"+u.name+"</td><td>"+u.role+"</td></tr>"})
+}
+
+function download(){
+let csv="Name,Category,Quantity\n"
+products.forEach(p=>{csv+=p.name+","+p.cat+","+p.qty+"\n"})
+let blob=new Blob([csv])
+let a=document.createElement("a")
+a.href=URL.createObjectURL(blob)
+a.download="inventory.csv"
+a.click()
+}
+
+function logout(){location.reload()}
+</script>
+
+</body>
+</html>
